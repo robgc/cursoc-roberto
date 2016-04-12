@@ -6,28 +6,28 @@ bool check_cell(int x, int y, const struct grid *tablero)
         if (tablero->is_toroidal) {
                 if (x < 0) {
                         if (y < 0)
-                                res = tablero->cells[MAX_Y-1][MAX_X-1];
+                                res = tablero->cells[MAX_X-1][MAX_Y-1];
                         else if (y == MAX_Y)
-                                res = tablero->cells[0][MAX_X-1];
+                                res = tablero->cells[MAX_X-1][0];
                         else
-                                res = tablero->cells[y][MAX_X-1];
+                                res = tablero->cells[MAX_X-1][y];
                 } else if (x == MAX_X) {
                         if(y < 0)
-                                res = tablero->cells[MAX_Y-1][0];
+                                res = tablero->cells[0][MAX_Y-1];
                         else if (y == MAX_Y)
                                 res = tablero->cells[0][0];
                         else
-                                res = tablero->cells[y][0];
+                                res = tablero->cells[0][y];
                 } else {
                         if (y < 0)
-                                res = tablero->cells[MAX_Y-1][x];
+                                res = tablero->cells[x][MAX_Y-1];
                         else if (y == MAX_Y)
-                                res = tablero->cells[0][x];
+                                res = tablero->cells[x][0];
                         else
-                                res = tablero->cells[y][x];
+                                res = tablero->cells[x][y];
                 }
         } else if (x >= 0 && x < MAX_X && y >= 0 && y < MAX_Y)
-                res = tablero->cells[y][x];
+                res = tablero->cells[x][y];
         return res;
 }
 
@@ -48,28 +48,20 @@ char get_number_of_neighbours(int x, int y, const struct grid *tablero)
 bool check_rule(int x, int y,
                  const struct grid *tablero)
 {
-        bool res;
         char neighbours = get_number_of_neighbours(x, y, tablero);
-        if (tablero->cells[y][x]) {
-                if (neighbours < 2 || neighbours > 3)
-                        res = false;
-                else
-                        res = true;
+        if (tablero->cells[x][y]) {
+                return (neighbours == 2 || neighbours == 3);
         } else {
-                if (neighbours == 3)
-                        res = true;
-                else
-                        res = false;
+                return neighbours == 3;
         }
-        return res;
 }
 
 void show(struct grid *tablero)
 {
         int i, j;
-        for (j = 0; j < MAX_Y; j++) {
-                for (i = 0; i < MAX_X; i++) {
-                        if (tablero->cells[j][i])
+        for (i = 0; i < MAX_X; i++) {
+                for (j = 0; j < MAX_Y; j++) {
+                        if (tablero->cells[i][j])
                                 printf("|x|");
                         else
                                 printf("| |");
@@ -84,10 +76,10 @@ void initialize_grid(struct grid *tablero)
 {
         int i, j;
         tablero->generation = 0;
-        for (j = 0; j < MAX_Y; j++) {
-                for (i = 0; i < MAX_X; i++) {
-                        tablero->cells[j][i] = false;
-                        tablero->tmp_cells[j][i] = false;
+        for (i = 0; i < MAX_X; i++) {
+                for (j = 0; j < MAX_Y; j++) {
+                        tablero->cells[i][j] = false;
+                        tablero->tmp_cells[i][j] = false;
                 }
         }
 }
@@ -95,11 +87,11 @@ void initialize_grid(struct grid *tablero)
 void update_grid(struct grid *tablero)
 {
         int i, j;
-        for (j = 0; j < MAX_Y; j++)
-                for (i = 0; i < MAX_X; i++)
-                        tablero->tmp_cells[j][i] = check_rule(i, j, tablero);
+        for (i = 0; i < MAX_X; i++)
+                for (j = 0; j < MAX_Y; j++)
+                        tablero->tmp_cells[i][j] = check_rule(i, j, tablero);
 
-        for (j = 0; j < MAX_Y; j++)
-                for (i = 0; i < MAX_X; i++)
-                        tablero->cells[j][i] = tablero->tmp_cells[j][i];
+        for (i = 0; i < MAX_X; i++)
+                for (j = 0; j < MAX_Y; j++)
+                        tablero->cells[i][j] = tablero->tmp_cells[i][j];
 }

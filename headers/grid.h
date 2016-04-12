@@ -11,9 +11,9 @@
 /*Definición del tablero*/
 struct grid {
         /* Falso -> muerta Cierto -> viva*/
-        bool cells[MAX_Y][MAX_X];
+        bool cells[MAX_X][MAX_Y];
         /*Array bidimensional temporal del siguiente estado*/
-        bool tmp_cells[MAX_Y][MAX_X];
+        bool tmp_cells[MAX_X][MAX_Y];
         unsigned int generation;
         bool is_toroidal;
 };
@@ -27,7 +27,7 @@ char get_number_of_neighbours(int x, int y,
 /*Devuelve el próximo estado de una célula determinada por su posición*/
 bool check_rule(int x, int y,
                  const struct grid *tablero);
-                 
+
 /*Comprueba si una célula vecina esta viva o muerta*/
 bool check_cell(int x, int y,
                 const struct grid *tablero);
