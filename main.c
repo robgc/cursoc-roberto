@@ -3,6 +3,7 @@
 void test_grid_1();
 void test_grid_2();
 void test_grid_3();
+void get_output(struct grid *game_grid);
 
 static const int iters = 10;
 static int a;
@@ -21,26 +22,22 @@ void test_grid_1()
         printf("******* TABLERO NO TOROIDAL *******\n");
 
         struct grid *tablero = grid_alloc();
-        initialize_grid(tablero, false);
+        grid_initialize(tablero, false);
 
-        tablero->cells[0][1] = true;
+        grid_set_cell(1,0,true,tablero);
+        grid_set_cell(1,1,true,tablero);
 
-        tablero->cells[1][0] = true;
-        tablero->cells[1][1] = true;
+        grid_set_cell(3,1,true,tablero);
+        grid_set_cell(3,2,true,tablero);
 
-        tablero->cells[3][1] = true;
-        tablero->cells[3][2] = true;
-
-        tablero->cells[4][0] = true;
-        tablero->cells[4][1] = true;
+        grid_set_cell(4,0,true,tablero);
+        grid_set_cell(4,1,true,tablero);
 
         for(a = 0; a < iters; a++) {
-                show(tablero);
-                update_grid(tablero);
-                printf("\n\n");
+                get_output(tablero);
         }
-        
-        free_grid(tablero);
+
+        grid_free(tablero);
 }
 
 void test_grid_2()
@@ -48,25 +45,23 @@ void test_grid_2()
         printf("******* TABLERO TOROIDAL *******\n");
 
         struct grid *tablero = grid_alloc();
-        initialize_grid(tablero, true);
+        grid_initialize(tablero, true);
 
-        tablero->cells[0][4] = true;
-        tablero->cells[0][5] = true;
+        grid_set_cell(0,4,true,tablero);
+        grid_set_cell(0,5,true,tablero);
 
-        tablero->cells[5][3] = true;
-        tablero->cells[5][4] = true;
+        grid_set_cell(5,3,true,tablero);
+        grid_set_cell(5,4,true,tablero);
 
-        tablero->cells[6][5] = true;
+        grid_set_cell(6,5,true,tablero);
 
-        tablero->cells[7][4] = true;
+        grid_set_cell(7,4,true,tablero);
 
         for(a = 0; a < iters; a++) {
-                show(tablero);
-                update_grid(tablero);
-                printf("\n\n");
+                get_output(tablero);
         }
 
-        free_grid(tablero);
+        grid_free(tablero);
 }
 
 void test_grid_3()
@@ -74,21 +69,24 @@ void test_grid_3()
         printf("******* OTRO TABLERO TOROIDAL *******\n");
 
         struct grid *tablero = grid_alloc();
-        initialize_grid(tablero, true);
+        grid_initialize(tablero, true);
 
-        tablero->is_toroidal = true;
+        grid_set_cell(0,7,true,tablero);
 
-        tablero->cells[0][7] = true;
-
-        tablero->cells[7][0] = true;
-        tablero->cells[7][1] = true;
-        tablero->cells[7][7] = true;
+        grid_set_cell(7,0,true,tablero);
+        grid_set_cell(7,1,true,tablero);
+        grid_set_cell(7,7,true,tablero);
 
         for(a = 0; a < iters; a++) {
-                show(tablero);
-                update_grid(tablero);
-                printf("\n\n");
+                get_output(tablero);
         }
 
-        free_grid(tablero);
+        grid_free(tablero);
+}
+
+void get_output(struct grid *game_grid)
+{
+        grid_show(game_grid);
+        grid_update(game_grid);
+        printf("\n\n");
 }
