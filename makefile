@@ -1,10 +1,10 @@
 .PHONY: clean
-all: juego
+all: gol
 
-juego: main.o grid.o
-	gcc main.o grid.o -o juego
+gol: main.o grid.o
+	gcc main.o grid.o -o gol
 
-main.o: headers/grid.h headers/list.h main.c
+main.o: headers/grid.h main.c
 	gcc -c -g main.c
 
 grid.o: headers/grid.h headers/list.h grid.c
@@ -12,4 +12,6 @@ grid.o: headers/grid.h headers/list.h grid.c
 
 clean:
 	rm -f *.o
-	rm -f juego
+	rm -f gol
+	rm -f output.txt
+	rm -f state.txt

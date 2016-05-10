@@ -4,7 +4,7 @@
 #define ATTR_IS_SET(flags, attr) ((flags) & (1 << (attr)))
 
 struct grid {
-        /* Falso -> muerta Cierto -> viva*/
+        /* Falso -> muerta | Cierto -> viva*/
         bool *cells;
         unsigned int generation;
         bool is_toroidal;
@@ -95,32 +95,17 @@ void grid_free(struct grid *game_grid)
 void grid_fix_crds(int *x_in, int *y_in,
                    const struct grid *game_grid)
 {
-        if (*x_in < 0)
-                *x_in = game_grid->height - 1;
-        else if (*x_in == game_grid->height)
-                *x_in = 0;
-
-        if (*y_in < 0)
-                *y_in = game_grid->width - 1;
-        else if (*y_in == game_grid->width)
-                *y_in = 0;
-}
-
-bool grid_check_cell(int x, int y, const struct grid *game_grid)
-{
-        grid_check(game_grid);
-        bool res = false;
-        int x_fixed = x;
-        int y_fixed = y;
-
         if (game_grid->is_toroidal) {
-                grid_fix_crds(&x_fixed, &y_fixed, game_grid);
-                res = grid_get_cell(x_fixed, y_fixed, game_grid);
-        } else if (x >= 0 && x < game_grid->height && y >= 0
-                   && y < game_grid->width)
-                res = grid_get_cell(x, y, game_grid);
+                if (*x_in < 0)
+                        *x_in = game_grid->height - 1;
+                else if (*x_in == game_grid->height)
+                        *x_in = 0;
 
-        return res;
+                if (*y_in < 0)
+                        *y_in = game_grid->width - 1;
+                else if (*y_in == game_grid->width)
+                        *y_in = 0;
+        }
 }
 
 char grid_get_number_of_neighbours(int x, int y,
@@ -130,17 +115,16 @@ char grid_get_number_of_neighbours(int x, int y,
         int x_fixed = x;
         int y_fixed = y;
 
-        if (game_grid->is_toroidal)
-                grid_fix_crds(&x_fixed, &y_fixed, game_grid);
+        grid_fix_crds(&x_fixed, &y_fixed, game_grid);
 
-        res += grid_check_cell(x_fixed - 1, y_fixed - 1, game_grid);
-        res += grid_check_cell(x_fixed - 1, y_fixed, game_grid);
-        res += grid_check_cell(x_fixed - 1, y_fixed + 1, game_grid);
-        res += grid_check_cell(x_fixed, y_fixed - 1, game_grid);
-        res += grid_check_cell(x_fixed, y_fixed + 1, game_grid);
-        res += grid_check_cell(x_fixed + 1, y_fixed - 1, game_grid);
-        res += grid_check_cell(x_fixed + 1, y_fixed, game_grid);
-        res += grid_check_cell(x_fixed + 1, y_fixed + 1, game_grid);
+        res += grid_get_cell(x_fixed - 1, y_fixed - 1, game_grid);
+        res += grid_get_cell(x_fixed - 1, y_fixed, game_grid);
+        res += grid_get_cell(x_fixed - 1, y_fixed + 1, game_grid);
+        res += grid_get_cell(x_fixed, y_fixed - 1, game_grid);
+        res += grid_get_cell(x_fixed, y_fixed + 1, game_grid);
+        res += grid_get_cell(x_fixed + 1, y_fixed - 1, game_grid);
+        res += grid_get_cell(x_fixed + 1, y_fixed, game_grid);
+        res += grid_get_cell(x_fixed + 1, y_fixed + 1, game_grid);
         return res;
 }
 
@@ -190,13 +174,9 @@ void grid_update(struct grid *game_grid)
 {
         grid_check(game_grid);
 
-        int i, j;
-        struct list_cell *lc;
-
         game_grid->generation++;
 
         grid_update_cell_list(game_grid);
-
 }
 
 void grid_check(const struct grid *game_grid)
@@ -225,18 +205,17 @@ void grid_set_cell(int x, int y, bool value, struct grid *game_grid)
 
 bool grid_get_cell(int x, int y, const struct grid *game_grid)
 {
+        grid_check(game_grid);
         int x_fixed = x;
         int y_fixed = y;
         bool res = false;
 
-        if (game_grid->is_toroidal) {
-                grid_fix_crds(&x_fixed, &y_fixed, game_grid);
+        grid_fix_crds(&x_fixed, &y_fixed, game_grid);
+
+        if (x_fixed >= 0 && x_fixed < game_grid->height && y_fixed >= 0
+            && y_fixed < game_grid->width)
                 res = *(game_grid->cells + x_fixed * game_grid->width
-                         + y_fixed);
-        } else if (x >= 0 && x < game_grid->height && y >= 0
-                   && y < game_grid->width)
-                res = *(game_grid->cells + x * game_grid->width
-                         + y);
+                        + y_fixed);
 
         return res;
 }
@@ -333,4 +312,127 @@ void grid_clean_list(struct list_head *in_list)
                 list_del(&(lc->list));
                 free(lc);
         }
+}
+
+void grid_read_file(const char *file_name, struct grid *game_grid)
+{
+        FILE *f;
+        int x_file, y_file, ret;
+        unsigned int gen;
+
+        f = fopen(file_name, "r");
+        if (!f) {
+                perror("Error: can't open file\n");
+                fclose(f);
+                exit(EXIT_FAILURE);
+        }
+
+        fscanf(f, "%u", &gen);
+
+        if (ferror(f)) {
+                perror("Error while reading the file\n");
+                fclose(f);
+                exit(EXIT_FAILURE);
+        }
+
+        game_grid->generation = gen;
+
+        if (gen > 0) {
+                while ((ret = fscanf(f, "%d, %d", &x_file, &y_file)) == 2) {
+                        grid_set_cell(x_file, y_file, true, game_grid);
+                        grid_add_cell_to_list(x_file, y_file,
+                                              &(game_grid->alive_cells),
+                                              game_grid);
+                }
+
+                if (ferror(f)) {
+                        perror("Error while reading the file\n");
+                        fclose(f);
+                        exit(EXIT_FAILURE);
+                } else if (ret != EOF) {
+                        fprintf(stderr, "Error while analysing: %d/%d\n",
+                                ret, 2);
+                }
+        } else {
+                while ((ret = fscanf(f, "%d, %d", &x_file, &y_file)) == 2) {
+                        grid_set_cell(x_file, y_file, true, game_grid);
+                }
+
+                if (ferror(f)) {
+                        perror("Error while reading the file\n");
+                        fclose(f);
+                        exit(EXIT_FAILURE);
+                } else if (ret != EOF) {
+                        fprintf(stderr, "Error while analysing: %d/%d\n",
+                                ret, 2);
+                }
+        }
+
+        fclose(f);
+}
+
+unsigned int grid_get_num_of_alive_cells(const struct grid *game_grid)
+{
+        struct list_cell *lc;
+        unsigned int res = 0;
+        list_for_each_entry(lc, &(game_grid->alive_cells), list) {
+                res++;
+        }
+        return res;
+}
+
+void grid_write_output(const struct grid *game_grid)
+{
+        FILE *f;
+        unsigned int n;
+
+        f = fopen("output.txt", "a");
+        if (!f) {
+                perror("Error while openning the output file\n");
+                fclose(f);
+                exit(EXIT_FAILURE);
+        }
+
+        n = grid_get_num_of_alive_cells(game_grid);
+        fprintf(f, "%u\t%u\n", game_grid->generation, n);
+
+        if (ferror(f)) {
+                perror("Error while writting in output file\n");
+                fclose(f);
+                exit(EXIT_FAILURE);
+        }
+
+        fclose(f);
+}
+
+void grid_save_state(const struct grid *game_grid)
+{
+        FILE *f;
+        struct list_cell *lc;
+
+        f = fopen("state.txt", "w");
+        if (!f) {
+                perror("Error while openning the last state file\n");
+                fclose(f);
+                exit(EXIT_FAILURE);
+        }
+
+        fprintf(f, "%u\n", game_grid->generation);
+        if (ferror(f)) {
+                perror("Error while writting in last state file\n");
+                fclose(f);
+                exit(EXIT_FAILURE);
+        }
+
+        list_for_each_entry(lc, &(game_grid->alive_cells), list) {
+                fprintf(f, "%d, %d\n", lc->x, lc->y);
+
+                if (ferror(f)) {
+                        perror("Error while writting in last state file\n");
+                        fclose(f);
+                        exit(EXIT_FAILURE);
+                }
+        }
+
+        fclose(f);
 }

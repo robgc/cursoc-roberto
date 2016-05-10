@@ -3,3 +3,9 @@
 
 # Executables
 *.out
+gol
+
+# Files
+state.txt
+output.txt
+test.txt
